@@ -1,0 +1,48 @@
+from transformers import DebertaTokenizer, DebertaModel
+import torch
+from transformers import DebertaConfig
+from transformers import (
+    DebertaConfig,
+    DebertaTokenizer,
+    DebertaForMaskedLM,
+    LineByLineTextDataset,
+    DataCollatorForLanguageModeling,
+    Trainer,
+    TrainingArguments
+)
+
+tokenizer = DebertaTokenizer.from_pretrained('microsoft/deberta-base')
+
+config = DebertaConfig()
+# !wget -c https://cdn-datasets.huggingface.co/EsperBERTo/data/oscar.eo.txt
+
+train_dataset = LineByLineTextDataset(
+    tokenizer=tokenizer,
+    file_path="/fsx/data/wikidemo/wiki_04",
+    block_size=128,
+)
+
+data_collator = DataCollatorForLanguageModeling(
+    tokenizer=tokenizer, mlm=True, mlm_probability=0.15
+)
+
+model = DebertaForMaskedLM(config=config)
+
+training_args = TrainingArguments(
+    output_dir="./deberta",
+    overwrite_output_dir=True,
+    num_train_epochs=10,
+    per_gpu_train_batch_size=32,
+    save_steps=10_000,
+    save_total_limit=2,
+    logging_first_step=True,
+    logging_steps=1,
+)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    data_collator=data_collator,
+    train_dataset=train_dataset,
+)
+trainer.train()
