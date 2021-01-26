@@ -31,12 +31,20 @@ model = DebertaForMaskedLM(config=config)
 training_args = TrainingArguments(
     output_dir="./deberta",
     overwrite_output_dir=True,
+
     num_train_epochs=10,
     per_gpu_train_batch_size=32,
+    learning_rate=1e-4,
+    weight_decay=0.01,
+    adam_beta1=0.9,
+    adam_beta2=0.999,
+    adam_epsilon=1e06,
+    max_grad_norm=1.0,
     save_steps=10_000,
     save_total_limit=2,
     logging_first_step=True,
     logging_steps=1,
+
 )
 
 trainer = Trainer(
