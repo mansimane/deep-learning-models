@@ -34,7 +34,7 @@ training_args = TrainingArguments(
 
     num_train_epochs=1000,
     per_gpu_train_batch_size=32,
-    learning_rate=1e-4,
+    learning_rate=5e-10,
     weight_decay=0.01,
     adam_beta1=0.9,
     adam_beta2=0.999,
