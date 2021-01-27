@@ -55,10 +55,10 @@ train_dataset = LineByLineTextDataset(
 # for example in train_dataset:
 #     print(example)
 #
-# for i in iterable_dataset:
-#     print(i)
-#     if i == 2:
-#         break
+for i in iterable_dataset:
+    print(i)
+    if i == 20:
+        break
 
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer, mlm=True, mlm_probability=0.15
@@ -83,7 +83,8 @@ training_args = TrainingArguments(
     save_total_limit=2,
     logging_first_step=True,
     logging_steps=1,
-    max_steps=10,
+    max_steps=10000,
+    gradient_accumulation_steps=1000,
 
 )
 
