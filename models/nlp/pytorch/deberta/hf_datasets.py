@@ -25,12 +25,19 @@ class MyIterableDataset(IterableDataset):
     def parse_file(self, file_path):
         with open(file_path, 'r') as file_obj:
             for line in file_obj:
-                if not line.isspace() and len(line) > 0:
-                    batch_encoding = self.tokenizer([line],
-                                                    add_special_tokens=True,
-                                                    truncation=True,
-                                                    max_length=self.block_size)
-                    yield {"input_ids": torch.tensor(batch_encoding["input_ids"][0], dtype=torch.long)}
+                if not skip_nexline:
+                    if not "<doc id=" in line and not "</doc>" in line:
+                        if not line.isspace() and len(line) > 0:
+                            batch_encoding = self.tokenizer([line],
+                                                            add_special_tokens=True,
+                                                            truncation=True,
+                                                            max_length=self.block_size)
+                            yield {"input_ids": torch.tensor(batch_encoding["input_ids"][0], dtype=torch.long)}
+                if "<doc id=" in line:
+                    # tile after  doc is usually title
+                    skip_nexline = True
+                else:
+                    skip_nexline = False
 
     def __iter__(self):
         return self.parse_file(self.file_path)
