@@ -18,7 +18,7 @@ config = DebertaConfig()
 
 train_dataset = LineByLineTextDataset(
     tokenizer=tokenizer,
-    file_path="/fsx/data/wikidemo/wiki_04",
+    file_path="/fsx/data/wikidemo/wiki_test",
     block_size=128,
 )
 
@@ -32,7 +32,7 @@ training_args = TrainingArguments(
     output_dir="./deberta",
     overwrite_output_dir=True,
 
-    num_train_epochs=10,
+    num_train_epochs=1000,
     per_gpu_train_batch_size=32,
     learning_rate=1e-4,
     weight_decay=0.01,
