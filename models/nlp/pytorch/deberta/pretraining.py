@@ -22,6 +22,17 @@ train_dataset = LineByLineTextDataset(
     block_size=128,
 )
 
+# for example in train_dataset:
+# ...     print(example)
+# ...
+# {'input_ids': tensor([    1,  4688, 13161,  1809,    16,    10,   559, 10561,     8,  2079,
+#            14, 24020,    70, 28906,     6, 41654,  4620,     9, 24393,     4,
+#            85, 26396,  1519,    13,     5, 34117,     9,     5,   194,    61,
+#            24,  3106,     7,    28, 39028,     6, 10495,     6,     8, 11190,
+#             4,     2])}
+
+# print(example['input_ids'].shape)
+# torch.Size([42])
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer, mlm=True, mlm_probability=0.15
 )
