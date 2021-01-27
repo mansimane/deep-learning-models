@@ -84,7 +84,7 @@ training_args = TrainingArguments(
     logging_first_step=False,
     logging_steps=1,
     max_steps=10000,
-    gradient_accumulation_steps=1000,
+    gradient_accumulation_steps=10,
 
 )
 
