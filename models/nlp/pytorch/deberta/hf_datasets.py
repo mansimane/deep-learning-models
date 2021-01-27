@@ -23,6 +23,7 @@ class MyIterableDataset(IterableDataset):
         self.block_size = block_size
 
     def parse_file(self, file_path):
+        skip_nexline = True
         with open(file_path, 'r') as file_obj:
             for line in file_obj:
                 if not skip_nexline:
