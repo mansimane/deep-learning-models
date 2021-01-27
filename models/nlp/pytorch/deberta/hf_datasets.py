@@ -38,11 +38,11 @@ class MyIterableDataset(IterableDataset):
 iterable_dataset = MyIterableDataset('/fsx/data/wikidemo/wiki_test',
                                      tokenizer)
 
-# train_dataset = LineByLineTextDataset(
-#     tokenizer=tokenizer,
-#     file_path="/fsx/data/wikidemo/wiki_test",
-#     block_size=128,
-# )
+train_dataset = LineByLineTextDataset(
+    tokenizer=tokenizer,
+    file_path="/fsx/data/wikidemo/wiki_test",
+    block_size=128,
+)
 
 # for example in train_dataset:
 #     print(example)
@@ -83,7 +83,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     data_collator=data_collator,
-    train_dataset=iterable_dataset,
+    train_dataset=train_dataset,
 )
 
 print("Starting training")
