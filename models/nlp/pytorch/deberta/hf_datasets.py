@@ -35,7 +35,7 @@ class MyIterableDataset(IterableDataset):
     def __iter__(self):
         return self.parse_file(self.file_path)
 
-iterable_dataset = MyIterableDataset('/fsx/data/wikidemo/wiki_test',
+iterable_dataset = MyIterableDataset('/fsx/data/wikidemo/wiki_00',
                                      tokenizer)
 
 train_dataset = LineByLineTextDataset(
@@ -44,13 +44,13 @@ train_dataset = LineByLineTextDataset(
     block_size=128,
 )
 
-for example in train_dataset:
-    print(example)
-
-for i in iterable_dataset:
-    print(i)
-    if i == 2:
-        break
+# for example in train_dataset:
+#     print(example)
+#
+# for i in iterable_dataset:
+#     print(i)
+#     if i == 2:
+#         break
 
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer, mlm=True, mlm_probability=0.15
