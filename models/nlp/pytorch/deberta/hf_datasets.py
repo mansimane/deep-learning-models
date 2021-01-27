@@ -30,7 +30,7 @@ class MyIterableDataset(IterableDataset):
                                                     add_special_tokens=True,
                                                     truncation=True,
                                                     max_length=self.block_size)
-                    yield {"input_ids": torch.tensor(batch_encoding["input_ids"], dtype=torch.long)}
+                    yield {"input_ids": torch.tensor(batch_encoding["input_ids"][0], dtype=torch.long)}
 
     def __iter__(self):
         return self.parse_file(self.file_path)
@@ -44,13 +44,13 @@ train_dataset = LineByLineTextDataset(
     block_size=128,
 )
 
-# for example in train_dataset:
-#     print(example)
-#
-# for i in iterable_dataset:
-#     print(i)
-#     if i == 2:
-#         break
+for example in train_dataset:
+    print(example)
+
+for i in iterable_dataset:
+    print(i)
+    if i == 2:
+        break
 
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer, mlm=True, mlm_probability=0.15
