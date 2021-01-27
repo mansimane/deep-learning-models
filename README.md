@@ -4,6 +4,7 @@ This is a repository with implementations optimized to run well on AWS infrastru
 
 ## Structure
 
+
 | Folder | Description |
 |-----------|-------------|
 | [models](models) | **A collection of implementations for models that use TF 2.x APIs. The models are reasonably optimized to run on AWS** |
