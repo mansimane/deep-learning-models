@@ -41,10 +41,9 @@ class MyIterableDataset(IterableDataset):
                                                             add_special_tokens=True,
                                                             truncation=True,
                                                             max_length=self.block_size)
-                            # yield {"input_ids": torch.tensor(batch_encoding["input_ids"][0], dtype=torch.long)}
-                            yield line
+                            yield {"input_ids": torch.tensor(batch_encoding["input_ids"][0], dtype=torch.long)}
                 if "<doc id=" in line:
-                    # tile after  doc is usually title
+                    # line after  doc id is usually title
                     skip_nexline = True
                 else:
                     skip_nexline = False
