@@ -48,27 +48,31 @@ class MyIterableDataset(IterableDataset):
                 else:
                     skip_nexline = False
 
-    def get_steam(self,file_list):
-        return chain.from_iterable(map(self.parse_file, file_list))
+    def get_stream(self,file_list):
+        return cycle(chain.from_iterable(map(self.parse_file, file_list)))
 
     def __iter__(self):
-        return self.get_steam(self.filenames)
+        return self.get_stream(self.filenames)
 
-iterable_dataset = MyIterableDataset('/fsx/data/wikidemo',
+# iterable_dataset = MyIterableDataset('/fsx/data/wikdemo_single',
+#                                      tokenizer)
+iterable_dataset = MyIterableDataset('/fsx/data/wiki_test_dir',
                                      tokenizer)
-#
+
 # train_dataset = LineByLineTextDataset(
 #     tokenizer=tokenizer,
-#     file_path="/fsx/data/wikidemo/wiki_test",
+#     file_path="/fsx/data/wikdemo_single/wiki_00",
 #     block_size=128,
 # )
 
 # for example in train_dataset:
 #     print(example)
-#
-# for i in iterable_dataset:
-#     print(i)
-#     if i == 100:
+# #
+# i =0
+# for example in iterable_dataset:
+#     print(example)
+#     i += 1
+#     if i == 10:
 #         break
 
 data_collator = DataCollatorForLanguageModeling(
@@ -82,20 +86,22 @@ training_args = TrainingArguments(
     output_dir="./deberta",
     overwrite_output_dir=True,
 
-    num_train_epochs=1000,
+    num_train_epochs=3,
     per_gpu_train_batch_size=32,
-    learning_rate=5e-10,
+    learning_rate=1e-4,
+
+    warmup_steps=10000,
     weight_decay=0.01,
     adam_beta1=0.9,
     adam_beta2=0.999,
-    adam_epsilon=1e06,
+    adam_epsilon=1e-6,
     max_grad_norm=1.0,
     save_steps=10_000,
     save_total_limit=2,
     logging_first_step=False,
     logging_steps=1,
     max_steps=10000,
-    gradient_accumulation_steps=10,
+    gradient_accumulation_steps=1,
 
 )
 
