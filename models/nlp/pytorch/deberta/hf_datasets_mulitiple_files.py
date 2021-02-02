@@ -56,10 +56,12 @@ class MyIterableDataset(IterableDataset):
 
 # iterable_dataset = MyIterableDataset('/fsx/data/wikdemo_single',
 #                                      tokenizer)
-iterable_dataset = MyIterableDataset('/fsx/data/wiki_test_dir',
-                                     tokenizer)
+# iterable_dataset = MyIterableDataset('/fsx/data/wiki_test_dir',
+#                                      tokenizer)
 
-# train_dataset = LineByLineTextDataset(
+iterable_dataset = MyIterableDataset('/data/wikidemo/',
+                                     tokenizer)
+# # train_dataset = LineByLineTextDataset(
 #     tokenizer=tokenizer,
 #     file_path="/fsx/data/wikdemo_single/wiki_00",
 #     block_size=128,
