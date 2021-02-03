@@ -19,7 +19,7 @@ Here is the full list of checkpoints on the hub that can be fine-tuned by this s
 https://huggingface.co/models?filter=masked-lm
 """
 # You can also adapt this script on your own masked language modeling task. Pointers for this are left as comments.
-
+from torch.utils.data import IterableDataset
 import logging
 import math
 import os
@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from datasets import load_dataset
-
+from itertools import islice
 import transformers
 from transformers import (
     CONFIG_MAPPING,
@@ -43,7 +43,9 @@ from transformers import (
     set_seed,
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
-
+import os
+from awsio.python.lib.io.s3.s3dataset import S3IterableDataset
+os.environ['AWS_REGION'] = 'us-east-1'
 
 logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())
@@ -245,6 +247,21 @@ def main():
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
+
+    data_files_orig = {}
+    data_files_orig["train"] = '/data/wikidemo_txt/wiki_00.txt'
+    data_files_orig["validation"] = '/data/wikidemo_txt/wiki_00.txt'
+    dataset_orig = load_dataset(extension, data_files=data_files_orig)
+
+    print("Original data format")
+    for data in islice(dataset_orig['train'], 0, 5):
+        print(data)
+
+
+
+
+
+
     # Load pretrained model and tokenizer
     #
     # Distributed training:
@@ -303,6 +320,8 @@ def main():
     text_column_name = "text" if "text" in column_names else column_names[0]
 
 
+
+
     if data_args.line_by_line:
         # When using line_by_line, we just tokenize each nonempty line.
         padding = "max_length" if data_args.pad_to_max_length else False
@@ -327,80 +346,71 @@ def main():
             remove_columns=[text_column_name],
             load_from_cache_file=not data_args.overwrite_cache,
         )
-    else:
-        # Otherwise, we tokenize every text, then concatenate them together before splitting them in smaller parts.
-        # We use `return_special_tokens_mask=True` because DataCollatorForLanguageModeling (see below) is more
-        # efficient when it receives the `special_tokens_mask`.
-        def tokenize_function(examples):
-            return tokenizer(examples[text_column_name], return_special_tokens_mask=True)
+    # Deleting else part
+    #S3
+    class s3_dataset(IterableDataset):
 
-        tokenized_datasets = datasets.map(
-            tokenize_function,
-            batched=True,
-            num_proc=data_args.preprocessing_num_workers,
-            remove_columns=column_names,
-            load_from_cache_file=not data_args.overwrite_cache,
-        )
+        def __init__(self, urls):
+            self.urls = urls
+            self.dataset = S3IterableDataset(self.urls, shuffle_urls=True)
 
-        if data_args.max_seq_length is None:
-            max_seq_length = tokenizer.model_max_length
-            if max_seq_length > 1024:
-                logger.warn(
-                    f"The tokenizer picked seems to have a very large `model_max_length` ({tokenizer.model_max_length}). "
-                    "Picking 1024 instead. You can change that default value by passing --max_seq_length xxx."
-                )
-                max_seq_length = 1024
-        else:
-            if data_args.max_seq_length > tokenizer.model_max_length:
-                logger.warn(
-                    f"The max_seq_length passed ({data_args.max_seq_length}) is larger than the maximum length for the"
-                    f"model ({tokenizer.model_max_length}). Using max_seq_length={tokenizer.model_max_length}."
-                )
-            max_seq_length = min(data_args.max_seq_length, tokenizer.model_max_length)
+        def data_generator(self):
+            try:
+                while True:
+                    filename, fileobj = next(self.dataset_iter)
+                    lines = fileobj.decode('UTF-8').splitlines()
+                    lines = [line for line in lines if len(line) > 0 and not line.isspace()]
+                    tokenized = tokenizer( lines,
+                    padding = padding,
+                    truncation = True,
+                    max_length = data_args.max_seq_length,
+                                  # We use this option because DataCollatorForLanguageModeling (see below) is more efficient when it
+                                       # receives the `special_tokens_mask`.
+                    return_special_tokens_mask = True)
+                    keys = list(tokenized.keys())
+                    for i in range(len(tokenized[keys[0]])):
+                        yield {key:val[i] for key, val in tokenized.items()}
 
-        # Main data processing function that will concatenate all texts from our dataset and generate chunks of
-        # max_seq_length.
-        def group_texts(examples):
-            # Concatenate all texts.
-            concatenated_examples = {k: sum(examples[k], []) for k in examples.keys()}
-            total_length = len(concatenated_examples[list(examples.keys())[0]])
-            # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
-            # customize this part to your needs.
-            total_length = (total_length // max_seq_length) * max_seq_length
-            # Split by chunks of max_len.
-            result = {
-                k: [t[i : i + max_seq_length] for i in range(0, total_length, max_seq_length)]
-                for k, t in concatenated_examples.items()
-            }
-            return result
+            except StopIteration as e:
+                return
 
-        # Note that with `batched=True`, this map processes 1,000 texts together, so group_texts throws away a
-        # remainder for each of those groups of 1,000 texts. You can adjust that batch_size here but a higher value
-        # might be slower to preprocess.
-        #
-        # To speed up this part, we use multiprocessing. See the documentation of the map method for more information:
-        # https://huggingface.co/docs/datasets/package_reference/main_classes.html#datasets.Dataset.map
-        tokenized_datasets = tokenized_datasets.map(
-            group_texts,
-            batched=True,
-            num_proc=data_args.preprocessing_num_workers,
-            load_from_cache_file=not data_args.overwrite_cache,
-        )
+        def __iter__(self):
+            self.dataset_iter = iter(self.dataset)
+            return self.data_generator()
+
+    urls = "s3://yuliu-dev-east/wiki_demo"
+    train_dataset = s3_dataset(urls)
+    print("MOdified data format")
+    for d in islice(train_dataset, 0, 5):
+        print(d)
+
+    print("Original toeknized format")
+    for data in islice(tokenized_datasets['train'], 0, 5):
+        print(data)
 
     # Data collator
     # This one will take care of randomly masking the tokens.
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
 
     # Initialize our Trainer
+    # trainer = Trainer(
+    #     model=model,
+    #     args=training_args,
+    #     train_dataset=tokenized_datasets["train"] if training_args.do_train else None,
+    #     eval_dataset=tokenized_datasets["validation"] if training_args.do_eval else None,
+    #     tokenizer=tokenizer,
+    #     data_collator=data_collator,
+    # )
+
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_datasets["train"] if training_args.do_train else None,
-        eval_dataset=tokenized_datasets["validation"] if training_args.do_eval else None,
+        train_dataset=train_dataset,
+        eval_dataset=datasets['train'],
         tokenizer=tokenizer,
         data_collator=data_collator,
-    )
 
+    )
     # Training
     if training_args.do_train:
         if last_checkpoint is not None:
