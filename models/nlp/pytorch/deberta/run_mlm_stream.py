@@ -248,16 +248,14 @@ def main():
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
 
-    data_files_orig = {}
-    data_files_orig["train"] = '/data/wikidemo_txt/wiki_00.txt'
-    data_files_orig["validation"] = '/data/wikidemo_txt/wiki_00.txt'
-    dataset_orig = load_dataset(extension, data_files=data_files_orig)
-
-    print("Original data format")
-    for data in islice(dataset_orig['train'], 0, 5):
-        print(data)
-
-
+    # data_files_orig = {}
+    # data_files_orig["train"] = '/data/wikidemo_txt/wiki_00.txt'
+    # data_files_orig["validation"] = '/data/wikidemo_txt/wiki_00.txt'
+    # dataset_orig = load_dataset(extension, data_files=data_files_orig)
+    #
+    # print("Original data format")
+    # for data in islice(dataset_orig['train'], 0, 5):
+    #     print(data)
 
 
 
@@ -358,6 +356,7 @@ def main():
             try:
                 while True:
                     filename, fileobj = next(self.dataset_iter)
+                    print("processing file: ", filename)
                     lines = fileobj.decode('UTF-8').splitlines()
                     lines = [line for line in lines if len(line) > 0 and not line.isspace()]
                     tokenized = tokenizer( lines,
@@ -369,16 +368,20 @@ def main():
                     return_special_tokens_mask = True)
                     keys = list(tokenized.keys())
                     for i in range(len(tokenized[keys[0]])):
+                        if "input_ids" not in keys:
+                            print("input_ids not in keys")
                         yield {key:val[i] for key, val in tokenized.items()}
 
             except StopIteration as e:
-                return
+                print(e)
+                self.dataset = S3IterableDataset(self.urls, shuffle_urls=True)
+                return self.__iter__()
 
         def __iter__(self):
             self.dataset_iter = iter(self.dataset)
             return self.data_generator()
 
-    urls = "s3://yuliu-dev-east/wiki_demo"
+    urls = "s3://yuliu-dev-east/wikidemo_single_file"
     train_dataset = s3_dataset(urls)
     print("MOdified data format")
     for d in islice(train_dataset, 0, 5):
@@ -392,21 +395,11 @@ def main():
     # This one will take care of randomly masking the tokens.
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
 
-    # Initialize our Trainer
-    # trainer = Trainer(
-    #     model=model,
-    #     args=training_args,
-    #     train_dataset=tokenized_datasets["train"] if training_args.do_train else None,
-    #     eval_dataset=tokenized_datasets["validation"] if training_args.do_eval else None,
-    #     tokenizer=tokenizer,
-    #     data_collator=data_collator,
-    # )
-
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=datasets['train'],
+        eval_dataset=tokenized_datasets['train'],
         tokenizer=tokenizer,
         data_collator=data_collator,
 
