@@ -247,19 +247,6 @@ def main():
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
-
-    # data_files_orig = {}
-    # data_files_orig["train"] = '/data/wikidemo_txt/wiki_00.txt'
-    # data_files_orig["validation"] = '/data/wikidemo_txt/wiki_00.txt'
-    # dataset_orig = load_dataset(extension, data_files=data_files_orig)
-    #
-    # print("Original data format")
-    # for data in islice(dataset_orig['train'], 0, 5):
-    #     print(data)
-
-
-
-
     # Load pretrained model and tokenizer
     #
     # Distributed training:
@@ -381,15 +368,8 @@ def main():
             self.dataset_iter = iter(self.dataset)
             return self.data_generator()
 
-    urls = "s3://yuliu-dev-east/wikidemo_single_file"
+    urls = "s3://yuliu-dev-east/wiki_train"
     train_dataset = s3_dataset(urls)
-    print("MOdified data format")
-    for d in islice(train_dataset, 0, 5):
-        print(d)
-
-    print("Original toeknized format")
-    for data in islice(tokenized_datasets['train'], 0, 5):
-        print(data)
 
     # Data collator
     # This one will take care of randomly masking the tokens.
