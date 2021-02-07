@@ -8,7 +8,6 @@ from transformers import (
 )
 from argparse import ArgumentParser
 import logging
-import subprocess as sb
 import os
 import json
 
@@ -28,7 +27,6 @@ def main(args):
     data_collator = DataCollatorForSOP(
         tokenizer=tokenizer, mlm=True, mlm_probability=args.mlm_probability
     )
-
     data_collator.tokenizer = tokenizer
 
     model = AlbertForPreTraining.from_pretrained(args.model_dir)
@@ -44,13 +42,15 @@ def main(args):
         model=model,
         args=training_args,
         data_collator=data_collator,
-        eval_dataset=validation_dataset,
-        # prediction_loss_only=True,
+        eval_dataset=validation_dataset
     )
 
     eval_output = trainer.evaluate()
+
+    logger.info(f"The evaluation loss is: {eval_output['eval_loss']}.")
     results = {"eval_loss": eval_output["eval_loss"]}
-    eval_file = os.path.join(args.output_dir, "albert_eval")
+    print(results)
+    eval_file = os.path.join(args.output_dir, "albert_eval_loss")
     with open(eval_file, 'w') as f:
         json.dump(results, f)
 
