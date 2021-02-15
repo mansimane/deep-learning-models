@@ -38,10 +38,9 @@ from transformers import (
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     HfArgumentParser,
-    Trainer,
-    TrainingArguments,
     set_seed,
 )
+from transformers.sagemaker import SageMakerTrainingArguments as TrainingArguments, SageMakerTrainer as Trainer
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 import os
 from awsio.python.lib.io.s3.s3dataset import S3IterableDataset
