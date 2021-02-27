@@ -45,6 +45,7 @@ from transformers.trainer_utils import get_last_checkpoint, is_main_process
 import os
 from awsio.python.lib.io.s3.s3dataset import S3IterableDataset
 os.environ['AWS_REGION'] = 'us-east-1'
+import smdistributed.modelparallel.torch as smp
 
 logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())
@@ -332,11 +333,19 @@ def main():
         )
     # Deleting else part
     #S3
+    class S3IterableDatasetSMMP(S3IterableDataset):
+        def __init__(self, training_args, urls_list, shuffle_urls=False):
+            super(S3IterableDatasetSMMP, self).__init__()
+            if training_args.mp_parameters != "":
+                self.world_size = smp.dp_size()
+                self.rank = smp.dp_rank()
+
+
     class s3_dataset(IterableDataset):
 
         def __init__(self, urls):
             self.urls = urls
-            self.dataset = S3IterableDataset(self.urls, shuffle_urls=True)
+            self.dataset = S3IterableDatasetSMMP(self.urls, shuffle_urls=True)
 
         def data_generator(self):
             try:
