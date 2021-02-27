@@ -369,7 +369,8 @@ def main():
 
     urls = "s3://yuliu-dev-east/wiki_train"
     train_dataset = s3_dataset(urls)
-
+    print("world size", train_dataset.dataset.world_size)
+    print("Rank ", train_dataset.dataset.rank)
     # Data collator
     # This one will take care of randomly masking the tokens.
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
