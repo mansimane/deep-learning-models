@@ -343,9 +343,9 @@ def main():
 
     class s3_dataset(IterableDataset):
 
-        def __init__(self, urls):
+        def __init__(self, urls, training_args):
             self.urls = urls
-            self.dataset = S3IterableDatasetSMMP(self.urls, shuffle_urls=True)
+            self.dataset = S3IterableDatasetSMMP(training_args, self.urls, shuffle_urls=True)
 
         def data_generator(self):
             try:
@@ -377,7 +377,7 @@ def main():
             return self.data_generator()
 
     urls = "s3://yuliu-dev-east/wiki_train"
-    train_dataset = s3_dataset(urls)
+    train_dataset = s3_dataset(urls, training_args)
     print("world size", train_dataset.dataset.world_size)
     print("Rank ", train_dataset.dataset.rank)
     # Data collator
