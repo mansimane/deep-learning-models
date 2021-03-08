@@ -237,6 +237,7 @@ def train(args, train_dataset, model, tokenizer):
                     # Only evaluate when single GPU otherwise metrics may not average well
                     if args.local_rank == -1 and args.evaluate_during_training and global_step % args.eval_steps == 0:
                         results = evaluate(args, model, tokenizer)
+                        print("###### Evaluating at step", global_step, results)
                         for key, value in results.items():
                             tb_writer.add_scalar("eval_{}".format(key), value, global_step)
                     tb_writer.add_scalar("lr", scheduler.get_lr()[0], global_step)
