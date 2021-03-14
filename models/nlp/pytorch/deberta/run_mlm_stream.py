@@ -109,6 +109,7 @@ class DataTrainingArguments:
         default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
     )
     train_file: Optional[str] = field(default=None, metadata={"help": "The input training data file (a text file)."})
+    train_bucket: Optional[str] = field(default=None, metadata={"help": "S3 bucket for training data."})
     validation_file: Optional[str] = field(
         default=None,
         metadata={"help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."},
@@ -140,6 +141,7 @@ class DataTrainingArguments:
         default=False,
         metadata={"help": "Whether distinct lines of text in the dataset are to be handled as distinct sequences."},
     )
+
     pad_to_max_length: bool = field(
         default=False,
         metadata={
@@ -368,7 +370,7 @@ def main():
             self.dataset_iter = iter(self.dataset)
             return self.data_generator()
 
-    urls = "s3://yuliu-dev-east/wiki_train"
+    urls = data_args.train_bucket
     train_dataset = s3_dataset(urls)
 
     # Data collator
