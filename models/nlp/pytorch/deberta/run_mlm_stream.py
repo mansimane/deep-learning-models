@@ -109,6 +109,7 @@ class DataTrainingArguments:
         default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
     )
     train_file: Optional[str] = field(default=None, metadata={"help": "The input training data file (a text file)."})
+    train_bucket: Optional[str] = field(default=None, metadata={"help": "S3 bucket for training data."})
     validation_file: Optional[str] = field(
         default=None,
         metadata={"help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."},
@@ -140,6 +141,11 @@ class DataTrainingArguments:
         default=False,
         metadata={"help": "Whether distinct lines of text in the dataset are to be handled as distinct sequences."},
     )
+    profile: bool = field(
+        default=False,
+        metadata={"help": "Whether to add markers for profiling in this file"},
+    )
+
     pad_to_max_length: bool = field(
         default=False,
         metadata={
@@ -210,6 +216,10 @@ def main():
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
+
+    # import torch for profiling
+    if data_args.profile:
+        import torch
 
     # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
     # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
@@ -331,6 +341,7 @@ def main():
             remove_columns=[text_column_name],
             load_from_cache_file=not data_args.overwrite_cache,
         )
+
     # Deleting else part
     #S3
     class S3IterableDatasetSMMP(S3IterableDataset):
@@ -354,6 +365,9 @@ def main():
                     print("processing file: ", filename)
                     lines = fileobj.decode('UTF-8').splitlines()
                     lines = [line for line in lines if len(line) > 0 and not line.isspace()]
+                    if data_args.profile:
+                        torch.cuda.nvtx.range_push('TOKENIZER')
+
                     tokenized = tokenizer( lines,
                     padding = padding,
                     truncation = True,
@@ -361,6 +375,10 @@ def main():
                                   # We use this option because DataCollatorForLanguageModeling (see below) is more efficient when it
                                        # receives the `special_tokens_mask`.
                     return_special_tokens_mask = True)
+
+                    if data_args.profile:
+                        torch.cuda.nvtx.range_pop() #TOKENIZER
+
                     keys = list(tokenized.keys())
                     for i in range(len(tokenized[keys[0]])):
                         if "input_ids" not in keys:
@@ -376,7 +394,7 @@ def main():
             self.dataset_iter = iter(self.dataset)
             return self.data_generator()
 
-    urls = "s3://yuliu-dev-east/wiki_train"
+    urls = data_args.train_bucket
     train_dataset = s3_dataset(urls, training_args)
     # print("world size", train_dataset.dataset.world_size)
     # print("Rank ", train_dataset.dataset.rank)
@@ -388,7 +406,7 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=tokenized_datasets['train'],
+        eval_dataset=tokenized_datasets['validation'],
         tokenizer=tokenizer,
         data_collator=data_collator,
 
