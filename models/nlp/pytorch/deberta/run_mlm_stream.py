@@ -348,18 +348,17 @@ def main():
                     print("processing file: ", filename)
                     lines = fileobj.decode('UTF-8').splitlines()
                     lines = [line for line in lines if len(line) > 0 and not line.isspace()]
-                    tokenized = tokenizer( lines,
-                    padding = padding,
-                    truncation = True,
-                    max_length = data_args.max_seq_length,
-                                  # We use this option because DataCollatorForLanguageModeling (see below) is more efficient when it
-                                       # receives the `special_tokens_mask`.
-                    return_special_tokens_mask = True)
-                    keys = list(tokenized.keys())
-                    for i in range(len(tokenized[keys[0]])):
-                        if "input_ids" not in keys:
-                            print("input_ids not in keys")
-                        yield {key:val[i] for key, val in tokenized.items()}
+
+                    for i in range(len(lines)):
+                        tokenized = tokenizer([lines[i]],
+                                              padding=padding,
+                                              truncation=True,
+                                              max_length=data_args.max_seq_length,
+                                              # We use this option because DataCollatorForLanguageModeling (see below) is more efficient when it
+                                              # receives the `special_tokens_mask`.
+                                              return_special_tokens_mask=True)
+                        yield {key:val[0] for key, val in tokenized.items()}
+
 
             except StopIteration as e:
                 print(e)
