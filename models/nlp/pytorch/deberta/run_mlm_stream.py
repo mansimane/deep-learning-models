@@ -347,9 +347,10 @@ def main():
     class S3IterableDatasetSMMP(S3IterableDataset):
         def __init__(self, training_args, urls_list, shuffle_urls=False):
             super().__init__(urls_list, shuffle_urls)
-            if training_args.mp_parameters != "":
-                self.world_size = smp.dp_size()
-                self.rank = smp.dp_rank()
+            # TODO: Add env varialbe parsing here
+            # if training_args.mp_parameters != "":
+            self.world_size = smp.dp_size()
+            self.rank = smp.dp_rank()
 
 
     class s3_dataset(IterableDataset):
