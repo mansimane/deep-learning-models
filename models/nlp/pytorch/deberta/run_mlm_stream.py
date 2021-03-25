@@ -230,30 +230,30 @@ def main():
     #
     # In distributed training, the load_dataset function guarantee that only one local process can concurrently
     # download the dataset.
-    if data_args.dataset_name is not None:
-        # Downloading and loading a dataset from the hub.
-        datasets = load_dataset(data_args.dataset_name, data_args.dataset_config_name)
-        if "validation" not in datasets.keys():
-            datasets["validation"] = load_dataset(
-                data_args.dataset_name,
-                data_args.dataset_config_name,
-                split=f"train[:{data_args.validation_split_percentage}%]",
-            )
-            datasets["train"] = load_dataset(
-                data_args.dataset_name,
-                data_args.dataset_config_name,
-                split=f"train[{data_args.validation_split_percentage}%:]",
-            )
-    else:
-        data_files = {}
-        if data_args.train_file is not None:
-            data_files["train"] = data_args.train_file
-        if data_args.validation_file is not None:
-            data_files["validation"] = data_args.validation_file
-        extension = data_args.train_file.split(".")[-1]
-        if extension == "txt":
-            extension = "text"
-        datasets = load_dataset(extension, data_files=data_files)
+    # if data_args.dataset_name is not None:
+    #     # Downloading and loading a dataset from the hub.
+    #     datasets = load_dataset(data_args.dataset_name, data_args.dataset_config_name)
+    #     if "validation" not in datasets.keys():
+    #         datasets["validation"] = load_dataset(
+    #             data_args.dataset_name,
+    #             data_args.dataset_config_name,
+    #             split=f"train[:{data_args.validation_split_percentage}%]",
+    #         )
+    #         datasets["train"] = load_dataset(
+    #             data_args.dataset_name,
+    #             data_args.dataset_config_name,
+    #             split=f"train[{data_args.validation_split_percentage}%:]",
+    #         )
+    # else:
+    #     data_files = {}
+    #     if data_args.train_file is not None:
+    #         data_files["train"] = data_args.train_file
+    #     if data_args.validation_file is not None:
+    #         data_files["validation"] = data_args.validation_file
+    #     extension = data_args.train_file.split(".")[-1]
+    #     if extension == "txt":
+    #         extension = "text"
+    #     datasets = load_dataset(extension, data_files=data_files)
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
@@ -308,11 +308,11 @@ def main():
 
     # Preprocessing the datasets.
     # First we tokenize all the texts.
-    if training_args.do_train:
-        column_names = datasets["train"].column_names
-    else:
-        column_names = datasets["validation"].column_names
-    text_column_name = "text" if "text" in column_names else column_names[0]
+    # if training_args.do_train:
+    #     column_names = datasets["train"].column_names
+    # else:
+    #     column_names = datasets["validation"].column_names
+    # text_column_name = "text" if "text" in column_names else column_names[0]
 
 
 
@@ -334,13 +334,13 @@ def main():
                 return_special_tokens_mask=True,
             )
 
-        tokenized_datasets = datasets.map(
-            tokenize_function,
-            batched=True,
-            num_proc=data_args.preprocessing_num_workers,
-            remove_columns=[text_column_name],
-            load_from_cache_file=not data_args.overwrite_cache,
-        )
+        # tokenized_datasets = datasets.map(
+        #     tokenize_function,
+        #     batched=True,
+        #     num_proc=data_args.preprocessing_num_workers,
+        #     remove_columns=[text_column_name],
+        #     load_from_cache_file=not data_args.overwrite_cache,
+        # )
 
     # Deleting else part
     #S3
@@ -405,7 +405,7 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=tokenized_datasets['validation'],
+        # eval_dataset=tokenized_datasets['validation'],
         tokenizer=tokenizer,
         data_collator=data_collator,
 
