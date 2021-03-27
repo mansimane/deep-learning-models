@@ -1,12 +1,5 @@
 # huggingface docker image region us-east-1
-FROM <your-account-id>.dkr.ecr.us-east-1.amazonaws.com/huggingface-training:pytorch1.6.0-transformers4.2.1-tokenizers0.9.4-datasets1.2.1-py36-gpu-cu110
+From 564829616587.dkr.ecr.us-east-1.amazonaws.com/huggingface-training:pytorch1.6.0-transformers4.3.1-tokenizers0.10.1-datasets1.2.1-py36-gpu-cu110
 
-# copy model training scripts to working directory
-COPY dist_train.py /opt/ml/code/
-COPY train.py /opt/ml/code/
-COPY eval.py /opt/ml/code/
-
-# set up environment vars
-ENV PYTHONUNBUFFERED=1
-ENV SAGEMAKER_SUBMIT_DIRECTORY /opt/ml/code
-ENV SAGEMAKER_PROGRAM /opt/ml/code/dist_train.py
+RUN pip uninstall transformers -y
+RUN pip install git+https://github.com/yl-to/transformers.git@profile

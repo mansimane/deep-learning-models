@@ -16,14 +16,15 @@ def main():
     parser.add_argument('--max_steps', type=int, default=100)
     # model
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
-    parser.add_argument("--learning_rate", type=float, default=1.2e-4)
-    parser.add_argument("--per_gpu_train_batch_size", type=int, default=32)
-    parser.add_argument("--role", type=str, help="sagemaker_execution_role")
-    parser.add_argument("--image_uri", type=str, help="container image uri")
+    parser.add_argument("--learning_rate", type=float, default=6e-5)
+    parser.add_argument("--per_gpu_train_batch_size", type=int, default=10)
+    # parser.add_argument("--role", type=str, help="sagemaker_execution_role")
+    parser.add_argument("--image_uri", type=str,help="container image uri")
     args = parser.parse_args()
 
     # initialization
-    role = args.role
+    # role = args.role
+    role = 'arn:aws:iam::564829616587:role/service-role/AmazonSageMaker-ExecutionRole-20200728T150394'
     image_uri = args.image_uri
     train_dir_s3_addr = f's3://{args.bucket_name}/{args.train_dir}'
     output_dir_s3_addr = f's3://{args.bucket_name}/{args.output_dir}'
@@ -39,7 +40,7 @@ def main():
                        "per_gpu_train_batch_size": args.per_gpu_train_batch_size
                        }
     # max_run = 86400 * 2 = 172800
-    estimator = PyTorch(base_job_name="albert-demo-2nodes-p3dn-smdp",
+    estimator = PyTorch(base_job_name=f"albert-benchmark-{args.num_nodes}nodes-p3dn",
                         source_dir=".",
                         entry_point="train.py",
                         image_uri=image_uri,

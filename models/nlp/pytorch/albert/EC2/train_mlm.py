@@ -2,18 +2,21 @@ from transformers import (
     AlbertConfig,
     AlbertTokenizer,
     AlbertForPreTraining,
+    LineByLineTextDataset,
     LineByLineWithSOPTextDataset,
     DataCollatorForSOP,
+    DataCollatorForLanguageModeling,
     Trainer,
     TrainingArguments
 )
 from argparse import ArgumentParser
 import logging
+import time
+import subprocess as sb
+import psutil
 import os
 import json
 import torch
-
-import smdistributed.dataparallel.torch.distributed as dist
 
 logger = logging.getLogger(__name__)
 
@@ -27,18 +30,19 @@ def main(args):
     tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
 
     logger.info('Parsing training dataset ...')
-    train_dataset = LineByLineWithSOPTextDataset(
-        tokenizer=tokenizer,
-        file_dir=args.train_data_dir,
-        block_size=args.max_length
-    )
+    # train_dataset = LineByLineTextDataset(
+    #     tokenizer=tokenizer,
+    #     file_dir=args.train_data_dir,
+    #     block_size=args.max_length
+    # )
+    # torch.save(train_dataset, f"test.pt")
 
+    train_dataset = torch.load("test.pt")
     logger.info('Dataset processed.')
 
-    data_collator = DataCollatorForSOP(
+    data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer, mlm=True, mlm_probability=args.mlm_probability
     )
-    data_collator.tokenizer = tokenizer
 
     model = AlbertForPreTraining(config=albert_base_configuration)
 
@@ -51,10 +55,11 @@ def main(args):
         save_steps=args.save_steps,
         save_total_limit=args.save_total_limit,
         logging_steps=args.logging_steps,
-        logging_dir=f"{args.output_dir}/logs",
+        logging_dir=args.logging_dir,
         learning_rate=args.learning_rate,
         fp16=args.fp16,
-        local_rank=args.local_rank
+        local_rank=args.local_rank,
+        dataloader_num_workers=16
     )
 
     trainer = Trainer(
@@ -63,17 +68,12 @@ def main(args):
         data_collator=data_collator,
         train_dataset=train_dataset
     )
-    logger.info('Trainer initialing, start training...')
-    train_output = trainer.train()
-    logger.info(f'Saving model to {args.output_dir}...')
-    if trainer.is_world_process_zero():
-        # save model and vocab files
-        trainer.save_model(args.output_dir)
-        tokenizer.save_vocabulary(args.output_dir)
-        train_res = os.path.join(args.output_dir, "albert_train_res")
-        with open(train_res, 'w') as f:
-            json.dump(train_output, f)
-    print('end of a single process')
+    logger.info('Trainer initialed, start training...')
+    start = time.time()
+    trainer.train()
+    duration = time.time() - start
+    print(duration)
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -86,20 +86,23 @@ if __name__ == "__main__":
     parser.add_argument("--random_seed", type=int, default=42)
     parser.add_argument("--mlm_probability", type=float, default=0.15)
     # model
-    parser.add_argument("--max_steps", type=int, default=1)
-    parser.add_argument("--per_gpu_train_batch_size", type=int, default=32)
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
-    parser.add_argument("--learning_rate", type=float, default=6e-5)
-    parser.add_argument("--fp16", type=bool, default=True)
+    parser.add_argument('--model_type', type=str, default='albert_base')
+    parser.add_argument("--max_steps", type=int, default=20)
+    parser.add_argument("--per_gpu_train_batch_size", type=int, default=16)
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=2)
+    parser.add_argument("--learning_rate", type=float, default=5e-5)
+    parser.add_argument("--fp16", type=bool, default=False)
     # utils
-    parser.add_argument("--save_steps", type=int, default=130000)
+    parser.add_argument("--save_steps", type=int, default=10000)
     parser.add_argument("--save_total_limit", type=int, default=1)
-    parser.add_argument("--logging_steps", type=int, default=50)
+    parser.add_argument("--logging_steps", type=int, default=10)
     parser.add_argument("--overwrite_output_dir", type=bool, default=True)
     # location setting up
-    parser.add_argument("--train_data_dir", default=os.environ['SM_CHANNEL_TRAINING'], type=str)
-    parser.add_argument("--output_dir", default=os.environ['SM_OUTPUT_DATA_DIR'], type=str)
+    parser.add_argument("--train_data_dir", default='/home/ubuntu/data/wiki_demo', type=str)
+    parser.add_argument("--validation_data_dir", default='/root/data/wiki_demo/wiki_00', type=str)
+    parser.add_argument("--finetune_data_dir", default='/home/ubuntu/data/squad', type=str)
+    parser.add_argument("--logging_dir", default='./log', type=str)
+    parser.add_argument("--output_dir", default='./output', type=str)
 
     args = parser.parse_args()
-    args.local_rank = dist.get_local_rank()
     main(args)
