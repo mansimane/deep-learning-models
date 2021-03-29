@@ -37,6 +37,7 @@ from transformers import (
     AutoModelForMaskedLM,
     AutoTokenizer,
     DataCollatorForLanguageModeling,
+    DataCollatorForPermutationLanguageModeling,
     HfArgumentParser,
     set_seed,
 )
@@ -82,6 +83,10 @@ class ModelArguments:
     use_fast_tokenizer: bool = field(
         default=True,
         metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+    )
+    use_span_masking: bool = field(
+        default=False,
+        metadata={"help": "Whether to use span masking or not"},
     )
     model_revision: str = field(
         default="main",
@@ -399,7 +404,10 @@ def main():
     # print("Rank ", train_dataset.dataset.rank)
     # Data collator
     # This one will take care of randomly masking the tokens.
-    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
+    if model_args.use_span_masking:
+        data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
+    else:
+        data_collator = DataCollatorForPermutationLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
 
     trainer = Trainer(
         model=model,
