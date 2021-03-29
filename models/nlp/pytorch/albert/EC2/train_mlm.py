@@ -15,10 +15,37 @@ import time
 import subprocess as sb
 import psutil
 import os
+import io
 import json
+
 import torch
+from torch.utils.data import IterableDataset
+from awsio.python.lib.io.s3.s3dataset import S3IterableDataset
 
 logger = logging.getLogger(__name__)
+
+class s3_dataset(IterableDataset):
+
+    def __init__(self, urls):
+        self.urls = urls
+        self.dataset = S3IterableDataset(urls, shuffle_urls=True)
+
+    def data_generator(self):
+        try:
+            while True:
+                filename, fileobj = next(self.dataset_iter)
+                examples = torch.load(io.BytesIO(fileobj))
+                for example in examples:
+                    yield example
+
+        except StopIteration as e:
+            print(e)
+            self.dataset = S3IterableDataset(self.urls, shuffle_urls=True)
+            return self.__iter__()
+
+    def __iter__(self):
+        self.dataset_iter = iter(self.dataset)
+        return self.data_generator()
 
 def main(args):
     albert_base_configuration = AlbertConfig(
@@ -30,15 +57,10 @@ def main(args):
     tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
 
     logger.info('Parsing training dataset ...')
-    # train_dataset = LineByLineTextDataset(
-    #     tokenizer=tokenizer,
-    #     file_dir=args.train_data_dir,
-    #     block_size=args.max_length
-    # )
-    # torch.save(train_dataset, f"test.pt")
 
-    train_dataset = torch.load("test.pt")
-    logger.info('Dataset processed.')
+    bucket = "s3://yuliu-dev-east/wiki_bookcorpus_demo"
+    # load pre-processed pt files, max_len=512
+    train_dataset = s3_dataset(bucket)
 
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer, mlm=True, mlm_probability=args.mlm_probability
@@ -58,8 +80,7 @@ def main(args):
         logging_dir=args.logging_dir,
         learning_rate=args.learning_rate,
         fp16=args.fp16,
-        local_rank=args.local_rank,
-        dataloader_num_workers=16
+        local_rank=args.local_rank
     )
 
     trainer = Trainer(
