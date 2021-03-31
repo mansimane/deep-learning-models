@@ -405,9 +405,9 @@ def main():
     # Data collator
     # This one will take care of randomly masking the tokens.
     if model_args.use_span_masking:
-        data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
+        data_collator = DataCollatorForPermutationLanguageModeling(tokenizer=tokenizer,                                                                   mlm_probability=data_args.mlm_probability)
     else:
-        data_collator = DataCollatorForPermutationLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
+        data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=data_args.mlm_probability)
 
     trainer = Trainer(
         model=model,

@@ -106,13 +106,15 @@ def train(args, train_dataset, model, tokenizer):
         optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total
     )
 
+    # This create an issue when loading from pretrained checkpoint as it tries to load
+    # state related to pretraining which are not compatible with finetuning states
     # Check if saved optimizer or scheduler states exist
-    if os.path.isfile(os.path.join(args.model_name_or_path, "optimizer.pt")) and os.path.isfile(
-        os.path.join(args.model_name_or_path, "scheduler.pt")
-    ):
-        # Load in optimizer and scheduler states
-        optimizer.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "optimizer.pt")))
-        scheduler.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "scheduler.pt")))
+    # if os.path.isfile(os.path.join(args.model_name_or_path, "optimizer.pt")) and os.path.isfile(
+    #     os.path.join(args.model_name_or_path, "scheduler.pt")
+    # ):
+    #     # Load in optimizer and scheduler states
+    #     optimizer.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "optimizer.pt")))
+    #     scheduler.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "scheduler.pt")))
 
     if args.fp16:
         try:
